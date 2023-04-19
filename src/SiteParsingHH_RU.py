@@ -64,7 +64,7 @@ class Vacancy:
         return self.salary_min >= other.salary_min
 
 
-class JSONSaver:
+class JSONSaverHH:
     """Класс для сохранения информации о вакансиях в файл по определённым критериям"""
     def __init__(self, keyword):
         self.__filename = f"{keyword.title()}.json"
