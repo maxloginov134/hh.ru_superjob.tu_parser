@@ -2,11 +2,8 @@ import json
 from abc import ABC
 import requests
 
-
-class Engine(ABC):
-    """Абстрактный класс"""
-    def get_request(self):
-        pass
+from src.Engine import Engine
+from src.JSONSaver import JSONSaver
 
 
 class HeadHunterAPI(Engine):
@@ -18,7 +15,11 @@ class HeadHunterAPI(Engine):
             "page": page,
             "per_page": 100,
         }
-        return requests.get("https://api.hh.ru/vacancies", params=params).json()['items']
+        try:
+            return requests.get("https://api.hh.ru/vacancies", params=params).json()['items']
+
+        except Exception as err:
+            raise err
 
     def get_vacancies(self, keyword):
         """Метод для отображения найденных вакансий"""
@@ -27,9 +28,12 @@ class HeadHunterAPI(Engine):
 
         for page in range(pages):
             print(f"Парсинг страницы {page+1}", end=": ")
-            values = self.get_request(keyword, page)
-            print(f"Найдено {len(values)} вакансий")
-            response.extend(values)
+            try:
+                values = self.get_request(keyword, page)
+                print(f"Найдено {len(values)} вакансий")
+                response.extend(values)
+            except Exception as err:
+                print(f"Произошла ошибка при получении вакансий: {err}")
 
         return response
 
@@ -64,23 +68,14 @@ class Vacancy:
         return self.salary_min >= other.salary_min
 
 
-class JSONSaverHH:
+class JSONSaverHH(JSONSaver):
     """Класс для сохранения информации о вакансиях в файл по определённым критериям"""
     def __init__(self, keyword):
-        self.__filename = f"{keyword.title()}.json"
-
-    @property
-    def filename(self):
-        return self.__filename
-
-    def add_vacancies(self, data):
-        """Метод для записи информации о подходящих вакансиях в json файл"""
-        with open(self.__filename, 'w', encoding='utf-8') as file:
-            json.dump(data, file, indent=4, ensure_ascii=False)
+        super().__init__(keyword)
 
     def select(self):
         """Метод для чтения информации о вакансиях из json файла"""
-        with open(self.__filename, 'r', encoding='utf-8') as file:
+        with open(self.filename(), 'r', encoding='utf-8') as file:
             data = json.load(file)
 
         vacancies = []

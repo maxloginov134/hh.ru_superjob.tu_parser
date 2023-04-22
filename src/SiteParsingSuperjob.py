@@ -1,7 +1,9 @@
 import json
 import requests
 from abc import ABC
-from src.SiteParsingHH_RU import Engine
+
+from src.JSONSaver import JSONSaver
+from src.Engine import Engine
 
 
 class SuperJobAPI(Engine):
@@ -29,8 +31,12 @@ class SuperJobAPI(Engine):
             'count': 100,
             'page': pages_for_parse,
         }
+        try:
 
-        return requests.get(self.URL, headers=header, params=params).json()['objects']
+            return requests.get(self.URL, headers=header, params=params).json()['objects']
+
+        except Exception as err:
+            raise err
 
     def get_vacancies_super(self, vacancy_for_search: str):
         """Метод для отображения найденных вакансий"""
@@ -39,11 +45,16 @@ class SuperJobAPI(Engine):
 
         for page in range(pages):
             print(f"Парсинг страницы {page+1}", end=": ")
-            values = self.__get_request(vacancy_for_search)
-            print(f"Найдено {len(values)} вакансий")
-            response.extend(values)
+            try:
+                values = self.__get_request(vacancy_for_search)
+                print(f"Найдено {len(values)} вакансий")
+                response.extend(values)
+            except Exception as err:
+                print(f"Произошла ошибка при получении вакансий: {err}")
 
-        return response
+            return response
+
+
 
 
 class Vacancy:
@@ -76,23 +87,14 @@ class Vacancy:
         return self.payment_from >= other.payment_from
 
 
-class JSONSaverSuper:
+class JSONSaverSuper(JSONSaver):
     """Класс для сохранения информации о вакансиях в файл по определённым критериям"""
     def __init__(self, keyword):
-        self.__filename = f"{keyword.title()}.json"
-
-    @property
-    def filename(self):
-        return self.__filename
-
-    def add_vacancies(self, data):
-        """Метод для записи информации о подходящих вакансиях в json файл"""
-        with open(self.__filename, 'w', encoding='utf-8') as file:
-            json.dump(data, file, indent=4, ensure_ascii=False)
+        super().__init__(keyword)
 
     def select(self):
         """Метод для чтения информации о вакансиях из json файла"""
-        with open(self.__filename, 'r', encoding='utf-8') as file:
+        with open(self.filename(), 'r', encoding='utf-8') as file:
             data = json.load(file)
 
         vacancies = []
